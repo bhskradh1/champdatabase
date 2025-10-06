@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, Sync, AlertCircle } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { syncService, SyncStatus } from '@/lib/sync-service';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -93,7 +93,7 @@ export const OfflineIndicator = () => {
                 disabled={syncStatus.isSyncing || syncStatus.pendingChanges === 0}
                 className="h-8 px-2"
               >
-                <Sync className={`h-4 w-4 mr-1 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 mr-1 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
                 {syncStatus.isSyncing ? 'Syncing...' : 'Sync'}
               </Button>
             </TooltipTrigger>
