@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { calculatePromotionFees } from "@/lib/utils";
 import { Users, TrendingUp, Calculator, AlertCircle, CheckCircle } from "lucide-react";
 
 interface Student {
@@ -141,9 +142,9 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
         totalOutstanding += feeDue;
         studentsWithOutstanding++;
       }
-      const carryForwardAmount = feeDue < 0 ? Math.abs(feeDue) : 0;
-      const outstandingDue = feeDue > 0 ? feeDue : 0;
-      const adjusted = newTotalFee - carryForwardAmount + outstandingDue; // base minus excess plus due
+  const carryForwardAmount = feeDue < 0 ? Math.abs(feeDue) : 0;
+  const outstandingDue = feeDue > 0 ? feeDue : 0;
+  const adjusted = calculatePromotionFees(feeDue, newTotalFee); // base adjusted via helper
       totalBaseNextFees += newTotalFee;
       totalAdjustedNextFees += adjusted;
       // Grand total should include only the adjusted next-year fees (not previous year totals)
@@ -183,8 +184,7 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
           const currentFeeDue = student.total_fee - student.fee_paid;
           const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
           const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
-          // Promotion fee logic: subtract carry forward (excess) from next year's fee, add outstanding due to next year's fee
-          const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
+          const adjustedNewFee = calculatePromotionFees(currentFeeDue, newTotalFee);
 
           // Generate unique student ID for next class
           const baseStudentId = student.student_id;

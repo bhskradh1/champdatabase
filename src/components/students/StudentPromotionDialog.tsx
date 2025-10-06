@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { calculatePromotionFees } from "@/lib/utils";
 import { Calculator, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from "lucide-react";
 
 interface Student {
@@ -108,10 +109,8 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
   const currentFeeDue = student ? student.total_fee - student.fee_paid : 0;
   const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
   const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
-  // Promotion fee logic:
-  // - If student has outstanding due from previous year, add that amount to next year's fee.
-  // - If student has excess payment (carry forward), subtract that from next year's fee.
-  const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
+  // Use shared helper to compute total payable for next year after adjustments
+  const adjustedNewFee = calculatePromotionFees(currentFeeDue, newTotalFee);
 
   const handlePromote = async () => {
     if (!student || !nextClass) return;
@@ -364,8 +363,8 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
-                  <Label className="text-lg font-semibold">Grand Total (Previous Year + Next Year Adjusted)</Label>
-                  <p className="text-xl font-bold text-primary">Rs. {(student.total_fee + adjustedNewFee).toLocaleString()}</p>
+                  <Label className="text-lg font-semibold">Total Payable for Next Year</Label>
+                  <p className="text-xl font-bold text-primary">Rs. {adjustedNewFee.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
