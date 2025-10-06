@@ -82,7 +82,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
     });
   };
 
-  const feeDue = payment.total_fee - payment.fee_paid;
+  const feeDue = payment.total_fee - (payment.fee_paid);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -193,7 +193,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
               <span className="font-semibold text-green-800 print:text-sm">Payment Successfully Recorded</span>
             </div>
             <p className="text-sm text-green-700 mt-1 print:text-xs">
-              This payment has been recorded in the school's fee management system.
+              Your payment has been successfully received.
             </p>
           </div>
 
