@@ -242,7 +242,7 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -318,7 +318,7 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto">
                 {students.map((student) => {
                   const feeDue = student.total_fee - student.fee_paid;
                   const isSelected = selectedStudents.includes(student.id);

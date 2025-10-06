@@ -202,7 +202,7 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
@@ -247,7 +247,7 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-sm text-muted-foreground">Current Total Fee</Label>
                   <p className="font-medium">Rs. {student.total_fee.toLocaleString()}</p>
@@ -302,7 +302,7 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
               <CardTitle className="text-lg">Next Class Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nextClass">Next Class</Label>
                   <Select value={nextClass} onValueChange={setNextClass}>
