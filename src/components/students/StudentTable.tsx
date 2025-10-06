@@ -164,17 +164,18 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                 <TableCell>Rs. {student.total_fee.toLocaleString()}</TableCell>
                 {/* Displayed paid should exclude previous-year carry-forward/outstanding adjustments */}
                 {(() => {
-                  const adjustments = carryForwardMap[student.id] || 0;
-                  // If the DB side hasn't yet excluded adjustments from fee_paid, subtract
-                  // them on the client for display purposes so promoted students appear
-                  // with fee_paid = 0 as intended.
-                  const displayedPaid = Math.max(0, student.fee_paid - adjustments);
-                  const displayedDue = Math.max(0, student.total_fee - displayedPaid);
+                  const ledgerAdjustments = carryForwardMap[student.id] || 0; // carry_forward + outstanding_due
+                  const paidThisYear = (student as any).fee_paid_current_year ?? student.fee_paid ?? 0;
+                  // Subtract ledger adjustments if they were (incorrectly) included in fee_paid
+                  const displayedPaid = Math.max(0, paidThisYear - ledgerAdjustments);
+                  const prevBal = (student as any).previous_year_balance ?? 0;
+                  // total due = current_year_fees (student.total_fee) + previous_year_balance - fee_paid_current_year
+                  const displayedDue = Math.round((student.total_fee + prevBal) - displayedPaid);
                   return (
                     <>
                       <TableCell>Rs. {displayedPaid.toLocaleString()}</TableCell>
-                      <TableCell>Rs. {displayedDue.toLocaleString()}</TableCell>
-                      <TableCell>{getFeesStatus(student.total_fee, displayedPaid)}</TableCell>
+                      <TableCell>Rs. {Math.max(0, displayedDue).toLocaleString()}</TableCell>
+                      <TableCell>{getFeesStatus(student.total_fee + prevBal, displayedPaid)}</TableCell>
                     </>
                   );
                 })()}

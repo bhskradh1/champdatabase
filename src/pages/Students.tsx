@@ -122,11 +122,14 @@ const Students = () => {
                   student.roll_number.toLowerCase().includes(query);
 
                 // Fee status filter
-                const feeDue = student.total_fee - student.fee_paid;
+                // Compute using the new separated fields when available
+                const paidThisYear = student.fee_paid_current_year ?? student.fee_paid ?? 0;
+                const prevBal = student.previous_year_balance ?? 0;
+                const feeDue = (student.total_fee + prevBal) - paidThisYear;
                 let matchesFeeStatus = true;
-                if (feeStatusFilter === "paid") matchesFeeStatus = feeDue === 0;
-                else if (feeStatusFilter === "partial") matchesFeeStatus = student.fee_paid > 0 && feeDue > 0;
-                else if (feeStatusFilter === "pending") matchesFeeStatus = student.fee_paid === 0;
+                if (feeStatusFilter === "paid") matchesFeeStatus = feeDue <= 0;
+                else if (feeStatusFilter === "partial") matchesFeeStatus = paidThisYear > 0 && feeDue > 0;
+                else if (feeStatusFilter === "pending") matchesFeeStatus = paidThisYear === 0 && feeDue > 0;
 
                 // Attendance filter
                 let matchesAttendance = true;
