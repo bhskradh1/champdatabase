@@ -108,7 +108,7 @@ const PaymentTable = ({ payments, onViewReceipt, onPrintReceipt, onRefetch }: Pa
                 </div>
               </TableCell>
               <TableCell>
-                <div className="font-semibold">₹{payment.amount.toLocaleString()}</div>
+                <div className="font-semibold">Rs. {payment.amount.toLocaleString()}</div>
               </TableCell>
               <TableCell>
                 {getPaymentMethodBadge(payment.payment_method)}
@@ -157,7 +157,7 @@ const PaymentTable = ({ payments, onViewReceipt, onPrintReceipt, onRefetch }: Pa
                           <br />
                           <strong>Student:</strong> {payment.students?.name}
                           <br />
-                          <strong>Amount:</strong> ₹{payment.amount.toLocaleString()}
+                          <strong>Amount:</strong> Rs. {payment.amount.toLocaleString()}
                           <br />
                           <strong>Date:</strong> {formatDate(payment.payment_date)}
                         </AlertDialogDescription>

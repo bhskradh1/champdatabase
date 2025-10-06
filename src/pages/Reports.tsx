@@ -167,7 +167,7 @@ const Reports = () => {
               <CardTitle className="text-sm font-medium">Total Fees Collected</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">₹{totalCollected.toLocaleString()}</p>
+              <p className="text-3xl font-bold">Rs. {totalCollected.toLocaleString()}</p>
             </CardContent>
           </Card>
           <Card>
@@ -175,7 +175,7 @@ const Reports = () => {
               <CardTitle className="text-sm font-medium">Pending Fees</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-destructive">₹{totalPending.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-destructive">Rs. {totalPending.toLocaleString()}</p>
             </CardContent>
           </Card>
         </div>

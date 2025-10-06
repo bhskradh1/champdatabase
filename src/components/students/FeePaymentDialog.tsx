@@ -139,15 +139,15 @@ const FeePaymentDialog = ({ open, onOpenChange, student, onSuccess }: FeePayment
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Total Fee:</span>
-                <span className="font-medium">₹{student.total_fee.toLocaleString()}</span>
+                <span className="font-medium">Rs. {student.total_fee.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Already Paid:</span>
-                <span className="font-medium">₹{student.fee_paid.toLocaleString()}</span>
+                <span className="font-medium">Rs. {student.fee_paid.toLocaleString()}</span>
               </div>
               <div className="flex justify-between border-t pt-2">
                 <span className="text-sm font-semibold">Fee Due:</span>
-                <span className="font-bold text-destructive">₹{feeDue.toLocaleString()}</span>
+                <span className="font-bold text-destructive">Rs. {feeDue.toLocaleString()}</span>
               </div>
             </div>
 

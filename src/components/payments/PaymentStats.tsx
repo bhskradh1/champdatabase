@@ -40,7 +40,7 @@ const PaymentStats = ({ payments }: PaymentStatsProps) => {
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
+          <div className="text-2xl font-bold">Rs. {totalAmount.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">
             {payments.length} transactions
           </p>
@@ -53,7 +53,7 @@ const PaymentStats = ({ payments }: PaymentStatsProps) => {
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">₹{todayAmount.toLocaleString()}</div>
+          <div className="text-2xl font-bold">Rs. {todayAmount.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">
             {todayPayments.length} payments today
           </p>
@@ -66,7 +66,7 @@ const PaymentStats = ({ payments }: PaymentStatsProps) => {
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">₹{thisMonthAmount.toLocaleString()}</div>
+          <div className="text-2xl font-bold">Rs. {thisMonthAmount.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">
             {thisMonthPayments.length} payments this month
           </p>

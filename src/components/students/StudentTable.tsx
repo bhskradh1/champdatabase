@@ -95,9 +95,9 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                   {student.class} {student.section && `- ${student.section}`}
                 </TableCell>
                 <TableCell>{student.contact || "-"}</TableCell>
-                <TableCell>₹{student.total_fee.toLocaleString()}</TableCell>
-                <TableCell>₹{student.fee_paid.toLocaleString()}</TableCell>
-                <TableCell>₹{(student.total_fee - student.fee_paid).toLocaleString()}</TableCell>
+                <TableCell>Rs. {student.total_fee.toLocaleString()}</TableCell>
+                <TableCell>Rs. {student.fee_paid.toLocaleString()}</TableCell>
+                <TableCell>Rs. {(student.total_fee - student.fee_paid).toLocaleString()}</TableCell>
                 <TableCell>{getFeesStatus(student.total_fee, student.fee_paid)}</TableCell>
                 <TableCell>{student.attendance_percentage}%</TableCell>
                 <TableCell className="text-right">

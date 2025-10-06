@@ -96,7 +96,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Amount Paid</p>
-                <p className="text-2xl font-bold text-primary">₹{payment.amount.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-primary">Rs. {payment.amount.toLocaleString()}</p>
               </div>
             </div>
             {payment.remarks && (

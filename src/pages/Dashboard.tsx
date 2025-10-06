@@ -106,13 +106,13 @@ const Dashboard = () => {
           />
           <StatsCard
             title="Total Fees"
-            value={`₹${stats?.totalFees.toLocaleString() || 0}`}
+            value={`Rs. ${stats?.totalFees.toLocaleString() || 0}`}
             icon={DollarSign}
             trend="Total amount"
           />
           <StatsCard
             title="Fees Collected"
-            value={`₹${stats?.totalCollected.toLocaleString() || 0}`}
+            value={`Rs. ${stats?.totalCollected.toLocaleString() || 0}`}
             icon={TrendingUp}
             trend={`${stats ? Math.round((stats.totalCollected / stats.totalFees) * 100) : 0}% collected`}
           />
