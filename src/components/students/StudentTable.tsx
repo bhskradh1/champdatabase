@@ -187,11 +187,7 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                   return (
                     <>
                       <TableCell>Rs. {displayedPaid.toLocaleString()}</TableCell>
-                     <TableCell>
-                       {displayedDue < 0 
-                          ? `- Rs. ${Math.abs(displayedDue).toLocaleString()} (Extra Paid)` 
-                          : `Rs. ${displayedDue.toLocaleString()}`}
-                     </TableCell>
+                      <TableCell>Rs. {displayedDue.toLocaleString()}</TableCell>
                       <TableCell>{getFeesStatus(student.total_fee + prevBal, displayedPaid)}</TableCell>
                     </>
                   );
