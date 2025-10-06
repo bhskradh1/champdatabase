@@ -207,7 +207,8 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
         const deletedAt = new Date().toISOString();
         const { error: updateErr } = await supabase
           .from("students")
-          .update({ deleted_at: deletedAt })
+          // use generic to allow unknown columns like deleted_at
+          .update<any>({ deleted_at: deletedAt })
           .eq("id", student.id);
 
         if (updateErr) {

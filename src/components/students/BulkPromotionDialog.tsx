@@ -146,7 +146,8 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
       const adjusted = newTotalFee - carryForwardAmount + outstandingDue; // base minus excess plus due
       totalBaseNextFees += newTotalFee;
       totalAdjustedNextFees += adjusted;
-      grandTotalAll += student.total_fee + adjusted;
+      // Grand total should include only the adjusted next-year fees (not previous year totals)
+      grandTotalAll += adjusted;
     });
 
     return {
@@ -253,7 +254,8 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
             const deletedAt = new Date().toISOString();
             const { error: updateErr } = await supabase
               .from("students")
-              .update({ deleted_at: deletedAt })
+              // cast payload to any because our local Student type doesn't include deleted_at
+              .update({ deleted_at: deletedAt } as any)
               .eq("id", student.id);
 
             if (updateErr) {
@@ -357,7 +359,7 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
                   <div className="text-2xl font-bold">Rs. {summary.totalAdjustedNextFees.toLocaleString()}</div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Grand Total (previous + adjusted)</p>
+                  <p className="text-sm text-muted-foreground">Grand Total (sum of adjusted next-year fees)</p>
                   <div className="text-2xl font-bold">Rs. {summary.grandTotalAll.toLocaleString()}</div>
                 </div>
               </div>
