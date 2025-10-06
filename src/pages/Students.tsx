@@ -47,12 +47,13 @@ const Students = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const { data: students, refetch } = useQuery({
+  const { data: students, refetch } = useQuery<any[]>({
     queryKey: ["students"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("students").select("*").order("created_at", { ascending: false });
+    queryFn: async (): Promise<any[]> => {
+      // cast to any because generated supabase types may not include newly added columns
+      const { data, error } = await (supabase.from("students") as any).select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 

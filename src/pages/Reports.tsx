@@ -224,8 +224,8 @@ const Reports = () => {
                   <SelectContent>
                     <SelectItem value="all">All Classes</SelectItem>
                     {classes.map((cls) => (
-                      <SelectItem key={cls} value={cls}>
-                        {cls}
+                      <SelectItem key={String(cls)} value={cls}>
+                        {String(cls)}
                       </SelectItem>
                     ))}
                   </SelectContent>

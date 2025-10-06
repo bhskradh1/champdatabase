@@ -29,15 +29,15 @@ const PaymentDialog = ({ open, onOpenChange, onSuccess, userId }: PaymentDialogP
     remarks: "",
   });
 
-  const { data: students } = useQuery({
+  const { data: students } = useQuery<any[]>({
     queryKey: ["students"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("students")
+    queryFn: async (): Promise<any[]> => {
+      // cast to any because DB schema may not yet include fee_paid_current_year in generated types
+      const { data, error } = await (supabase.from("students") as any)
         .select("id, student_id, name, roll_number, class, section, total_fee, fee_paid, fee_paid_current_year")
         .order("name");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -149,13 +149,13 @@ const PaymentDialog = ({ open, onOpenChange, onSuccess, userId }: PaymentDialogP
             {studentSearch && (
               <div className="max-h-40 overflow-y-auto border rounded-md">
                 {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student) => (
+                  filteredStudents.map((student: any) => (
                     <div
-                      key={student.id}
+                      key={String(student.id)}
                       className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
                       onClick={() => {
                         setSelectedStudent(student);
-                        setStudentSearch(student.name);
+                        setStudentSearch(String(student.name));
                       }}
                     >
                       <div className="flex items-center gap-3">
