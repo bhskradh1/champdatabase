@@ -90,6 +90,9 @@ const FeePaymentDialog = ({ open, onOpenChange, student, onSuccess }: FeePayment
         roll_number: student.roll_number,
         class: student.class,
         section: student.section,
+        total_fee: student.total_fee,
+        fee_paid: student.fee_paid,
+        created_at: data.created_at,
       });
       setShowSlip(true);
       onSuccess();
