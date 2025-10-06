@@ -108,9 +108,10 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
   const currentFeeDue = student ? student.total_fee - student.fee_paid : 0;
   const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
   const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
-  // NOTE: inverted logic: carry forward (excess payment) will be ADDED to next year's fee
-  // and outstanding due will be SUBTRACTED from next year's fee (per requested behavior)
-  const adjustedNewFee = newTotalFee + carryForwardAmount - outstandingDue;
+  // Promotion fee logic:
+  // - If student has outstanding due from previous year, add that amount to next year's fee.
+  // - If student has excess payment (carry forward), subtract that from next year's fee.
+  const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
 
   const handlePromote = async () => {
     if (!student || !nextClass) return;
@@ -200,15 +201,40 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
           });
       }
 
-      // After successful promotion, delete the previous student record as requested
+      // Attempt to soft-delete the previous student record by setting `deleted_at`.
+      // If the column doesn't exist or update fails, fall back to hard delete.
       try {
-        await supabase.from("students").delete().eq("id", student.id);
-      } catch (delErr) {
-        // Non-fatal: show a toast but continue
+        const deletedAt = new Date().toISOString();
+        const { error: updateErr } = await supabase
+          .from("students")
+          .update({ deleted_at: deletedAt })
+          .eq("id", student.id);
+
+        if (updateErr) {
+          // Fall back to hard delete
+          const { error: delErr } = await supabase
+            .from("students")
+            .delete()
+            .eq("id", student.id);
+
+          if (delErr) {
+            // Rollback: remove the newly created student since we couldn't remove the old one
+            await supabase.from("students").delete().eq("id", newStudent.id);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to remove previous student record after promotion. Promotion was rolled back.",
+            });
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // Non-fatal: show a warning but continue
         toast({
           variant: "destructive",
           title: "Warning",
-          description: "Failed to delete previous student record after promotion.",
+          description: "Failed to remove previous student record after promotion.",
         });
       }
 
@@ -305,7 +331,7 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Excess Payment:</strong> Rs. {carryForwardAmount.toLocaleString()} will be carried forward to next class
+                    <strong>Excess Payment:</strong> Rs. {carryForwardAmount.toLocaleString()} will be carried forward and deducted from next class fee
                   </AlertDescription>
                 </Alert>
               )}
@@ -319,10 +345,26 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
                 </Alert>
               )}
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <Label className="text-lg font-semibold">Adjusted Next Class Fee</Label>
-                  <p className="text-xl font-bold text-primary">Rs. {adjustedNewFee.toLocaleString()}</p>
+              <div className="border-t pt-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Previous Year (Total / Paid / Due/Excess)</Label>
+                    <p className="font-medium">Total: Rs. {student.total_fee.toLocaleString()}</p>
+                    <p className="font-medium">Paid: Rs. {student.fee_paid.toLocaleString()}</p>
+                    <p className="font-medium">{currentFeeDue > 0 ? `Outstanding: Rs. ${currentFeeDue.toLocaleString()}` : `Excess: Rs. ${Math.abs(currentFeeDue).toLocaleString()}`}</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Next Year (Base / Adjusted / Remarks)</Label>
+                    <p className="font-medium">Base Fee: Rs. {newTotalFee.toLocaleString()}</p>
+                    <p className="font-medium">Adjusted Fee: Rs. {adjustedNewFee.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">{carryForwardAmount > 0 ? `Deducted Rs. ${carryForwardAmount.toLocaleString()} from next year due to excess payment` : outstandingDue > 0 ? `Added Rs. ${outstandingDue.toLocaleString()} to next year due to outstanding from previous year` : 'No adjustments'}</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2">
+                  <Label className="text-lg font-semibold">Grand Total (Previous Year + Next Year Adjusted)</Label>
+                  <p className="text-xl font-bold text-primary">Rs. {(student.total_fee + adjustedNewFee).toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>

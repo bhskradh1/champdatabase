@@ -128,6 +128,9 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
     let totalOutstanding = 0;
     let studentsWithExcess = 0;
     let studentsWithOutstanding = 0;
+    let totalBaseNextFees = 0;
+    let totalAdjustedNextFees = 0;
+    let grandTotalAll = 0;
 
     selected.forEach(student => {
       const feeDue = student.total_fee - student.fee_paid;
@@ -138,6 +141,12 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
         totalOutstanding += feeDue;
         studentsWithOutstanding++;
       }
+      const carryForwardAmount = feeDue < 0 ? Math.abs(feeDue) : 0;
+      const outstandingDue = feeDue > 0 ? feeDue : 0;
+      const adjusted = newTotalFee - carryForwardAmount + outstandingDue; // base minus excess plus due
+      totalBaseNextFees += newTotalFee;
+      totalAdjustedNextFees += adjusted;
+      grandTotalAll += student.total_fee + adjusted;
     });
 
     return {
@@ -145,7 +154,10 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
       totalOutstanding,
       studentsWithExcess,
       studentsWithOutstanding,
-      totalStudents: selected.length
+      totalStudents: selected.length,
+      totalBaseNextFees,
+      totalAdjustedNextFees,
+      grandTotalAll,
     };
   };
 
@@ -170,9 +182,8 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
           const currentFeeDue = student.total_fee - student.fee_paid;
           const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
           const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
-          // NOTE: inverted logic: carry forward (excess payment) will be ADDED to next year's fee
-          // and outstanding due will be SUBTRACTED from next year's fee (per requested behavior)
-          const adjustedNewFee = newTotalFee + carryForwardAmount - outstandingDue;
+          // Promotion fee logic: subtract carry forward (excess) from next year's fee, add outstanding due to next year's fee
+          const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
 
           // Generate unique student ID for next class
           const baseStudentId = student.student_id;
@@ -237,16 +248,29 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
               });
           }
 
-          // After successful promotion, delete the previous student record as requested
+          // Attempt soft-delete first, fall back to hard-delete. If both fail, rollback the new student.
           try {
-            await supabase.from("students").delete().eq("id", student.id);
-          } catch (delErr) {
-            // Non-fatal: show a toast but continue
-            toast({
-              variant: "destructive",
-              title: "Warning",
-              description: `Failed to delete previous student record for ${student.name}`,
-            });
+            const deletedAt = new Date().toISOString();
+            const { error: updateErr } = await supabase
+              .from("students")
+              .update({ deleted_at: deletedAt })
+              .eq("id", student.id);
+
+            if (updateErr) {
+              const { error: delErr } = await supabase
+                .from("students")
+                .delete()
+                .eq("id", student.id);
+
+              if (delErr) {
+                // Rollback newly created student to avoid duplicates
+                await supabase.from("students").delete().eq("id", newStudent.id);
+                throw new Error(`Failed to remove previous student record for ${student.name}; promotion rolled back.`);
+              }
+            }
+          } catch (err: any) {
+            // Re-throw to be caught by outer try and show the error toast
+            throw err;
           }
 
           return newStudent;
@@ -317,6 +341,29 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
             </Card>
           </div>
 
+          {/* Totals Summary for selected students */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Totals for Selected Students</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Base Next Year Fees (sum)</p>
+                  <div className="text-2xl font-bold">Rs. {summary.totalBaseNextFees.toLocaleString()}</div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Adjusted Next Year Fees (sum)</p>
+                  <div className="text-2xl font-bold">Rs. {summary.totalAdjustedNextFees.toLocaleString()}</div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Grand Total (previous + adjusted)</p>
+                  <div className="text-2xl font-bold">Rs. {summary.grandTotalAll.toLocaleString()}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Next Class Settings */}
           <Card>
             <CardHeader>
@@ -356,6 +403,10 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
                   const feeDue = student.total_fee - student.fee_paid;
                   const isSelected = selectedStudents.includes(student.id);
                   
+                  const carryForwardAmount = feeDue < 0 ? Math.abs(feeDue) : 0;
+                  const outstandingDue = feeDue > 0 ? feeDue : 0;
+                  const adjusted = newTotalFee - carryForwardAmount + outstandingDue;
+
                   return (
                     <div
                       key={student.id}
@@ -380,16 +431,41 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
                               Rs. {student.fee_paid.toLocaleString()} / {student.total_fee.toLocaleString()}
                             </p>
                             {feeDue < 0 ? (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
+                              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
                                 Excess: Rs. {Math.abs(feeDue).toLocaleString()}
-                              </Badge>
+                              </div>
                             ) : feeDue > 0 ? (
-                              <Badge variant="destructive">
+                              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-destructive text-destructive-foreground">
                                 Due: Rs. {feeDue.toLocaleString()}
-                              </Badge>
+                              </div>
                             ) : (
-                              <Badge variant="secondary">Paid in Full</Badge>
+                              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground">Paid in Full</div>
                             )}
+                          </div>
+                        </div>
+
+                        {/* Per-student breakdown: previous year, next year adjusted, remark */}
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <div className="font-medium">Previous Year</div>
+                            <div>Total: Rs. {student.total_fee.toLocaleString()}</div>
+                            <div>Paid: Rs. {student.fee_paid.toLocaleString()}</div>
+                            <div>{feeDue > 0 ? `Outstanding: Rs. ${feeDue.toLocaleString()}` : `Excess: Rs. ${Math.abs(feeDue).toLocaleString()}`}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium">Next Year</div>
+                            <div>Base Fee: Rs. {newTotalFee.toLocaleString()}</div>
+                            <div>Adjusted: Rs. {adjusted.toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium">Remarks</div>
+                            <div className="text-sm">
+                              {carryForwardAmount > 0
+                                ? `Deduct Rs. ${carryForwardAmount.toLocaleString()} from next year (carry forward)`
+                                : outstandingDue > 0
+                                  ? `Add Rs. ${outstandingDue.toLocaleString()} to next year (outstanding)`
+                                  : 'No adjustments'}
+                            </div>
                           </div>
                         </div>
                       </div>
