@@ -82,7 +82,8 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
     });
   };
 
-  const feeDue = payment.total_fee - (payment.fee_paid);
+  const feeDue = payment.total_fee - (payment.fee_paid + payment.amount);
+
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
