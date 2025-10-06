@@ -164,7 +164,9 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
           class: nextClass,
           section: nextSection,
           total_fee: adjustedNewFee,
-          fee_paid: carryForwardAmount, // Carry forward excess payment (kept as-is)
+            // Do NOT set fee_paid to previous-year carry-forward here.
+            // Keep fee_paid representing payments made in the current year only.
+            fee_paid: 0,
           created_by: session.session?.user.id || "",
         })
         .select()

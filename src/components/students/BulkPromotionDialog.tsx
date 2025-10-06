@@ -214,7 +214,8 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
               class: nextClass,
               section: nextSection,
               total_fee: adjustedNewFee,
-              fee_paid: carryForwardAmount,
+              // Keep fee_paid representing payments made in the current year only.
+              fee_paid: 0,
               created_by: session.session?.user.id || "",
             })
             .select()
