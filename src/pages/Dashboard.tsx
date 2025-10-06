@@ -38,31 +38,42 @@ const Dashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const { data: students } = await supabase.from("students").select("*");
-      const { data: payments } = await supabase.from("fee_payments").select("*");
+      // Try to use the overview view if available
+  // Use any-cast because the generated supabase client types may not include the new view
+  const { data: studentsOverview, error: viewErr } = await (supabase.from("student_fee_overview" as any) as any).select("*");
+      let students = studentsOverview;
+      if (viewErr || !studentsOverview) {
+        const { data: s } = await supabase.from("students").select("*");
+        students = s || [];
+      }
 
       const totalStudents = students?.length || 0;
-      const totalFees = students?.reduce((sum, s) => sum + Number(s.total_fee), 0) || 0;
-      const totalCollected = students?.reduce((sum, s) => sum + Number(s.fee_paid), 0) || 0;
-      const pendingFees = totalFees - totalCollected;
+      const totalFees = students?.reduce((sum: number, s: any) => sum + Number(s.current_year_fees ?? s.total_fee), 0) || 0;
+      const totalCollected = students?.reduce((sum: number, s: any) => sum + Number(s.fee_paid_current_year ?? s.fee_paid ?? 0), 0) || 0;
+      const pendingFees = students?.reduce((sum: number, s: any) => sum + Math.max(0, Number(s.total_due ?? ((s.current_year_fees ?? s.total_fee) + (s.previous_year_balance ?? 0) - (s.fee_paid_current_year ?? s.fee_paid ?? 0)))), 0) || 0;
       const avgAttendance = students?.length
-        ? students.reduce((sum, s) => sum + Number(s.attendance_percentage), 0) / students.length
+        ? students.reduce((sum: number, s: any) => sum + Number(s.attendance_percentage || 0), 0) / students.length
         : 0;
 
       // Fee status distribution
-      const paidCount = students?.filter((s) => s.fee_paid >= s.total_fee).length || 0;
-      const partialCount = students?.filter((s) => s.fee_paid > 0 && s.fee_paid < s.total_fee).length || 0;
-      const pendingCount = students?.filter((s) => s.fee_paid === 0).length || 0;
+      const paidCount = students?.filter((s: any) => (Number(s.fee_paid_current_year ?? s.fee_paid ?? 0) >= Number(s.current_year_fees ?? s.total_fee))).length || 0;
+      const partialCount = students?.filter((s: any) => {
+        const paid = Number(s.fee_paid_current_year ?? s.fee_paid ?? 0);
+        const total = Number(s.current_year_fees ?? s.total_fee);
+        const due = Number(s.total_due ?? (total + (s.previous_year_balance ?? 0) - paid));
+        return paid > 0 && due > 0;
+      }).length || 0;
+      const pendingCount = students?.filter((s: any) => Number(s.fee_paid_current_year ?? s.fee_paid ?? 0) === 0).length || 0;
 
       // Class-wise distribution
-      const classData = students?.reduce((acc: any, s) => {
+      const classData = students?.reduce((acc: any, s: any) => {
         const className = s.class;
         if (!acc[className]) {
           acc[className] = { class: className, students: 0, fees: 0, collected: 0 };
         }
         acc[className].students += 1;
-        acc[className].fees += Number(s.total_fee);
-        acc[className].collected += Number(s.fee_paid);
+        acc[className].fees += Number(s.current_year_fees ?? s.total_fee);
+        acc[className].collected += Number(s.fee_paid_current_year ?? s.fee_paid ?? 0);
         return acc;
       }, {});
 

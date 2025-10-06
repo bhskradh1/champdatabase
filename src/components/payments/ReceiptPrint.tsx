@@ -18,7 +18,8 @@ interface ReceiptPrintProps {
       class: string;
       section: string | null;
       total_fee: number;
-      fee_paid: number;
+    fee_paid: number;
+    fee_paid_current_year?: number;
     };
   };
   open: boolean;
@@ -86,7 +87,10 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
     });
   };
 
-  const feeDue = payment.students.total_fee - payment.students.fee_paid;
+  // Prefer fee_paid_current_year for display; include previous_year_balance if present
+  const paidThisYear = payment.students.fee_paid_current_year ?? payment.students.fee_paid ?? 0;
+  const prevBal = (payment.students as any).previous_year_balance ?? 0;
+  const feeDue = (payment.students.total_fee + prevBal) - paidThisYear;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,8 +172,8 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
                   <span className="font-semibold print:text-sm">Rs. {payment.students.total_fee.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground print:text-xs">Previously Paid:</span>
-                  <span className="font-semibold print:text-sm">Rs. {(payment.students.fee_paid - payment.amount).toLocaleString()}</span>
+                  <span className="text-muted-foreground print:text-xs">Previously Paid (This Year):</span>
+                  <span className="font-semibold print:text-sm">Rs. {(paidThisYear - payment.amount).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 print:pt-1">
                   <span className="text-base font-bold print:text-sm">Amount Paid:</span>

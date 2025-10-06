@@ -40,15 +40,24 @@ const Reports = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Prefer using the student_fee_overview view if available (it provides total_due, outstanding, extra_paid)
   const { data: students } = useQuery({
     queryKey: ["students-reports", selectedClass],
     queryFn: async () => {
-      let query = supabase.from("students").select("*").order("class");
+  // supabase client types may not include the view name; cast to any to avoid TS overload errors
+  let query = (supabase.from("student_fee_overview" as any) as any).select("*").order("class");
       if (selectedClass !== "all") {
         query = query.eq("class", selectedClass);
       }
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        // Fallback to legacy students table if view isn't present
+        let q = supabase.from("students").select("*").order("class");
+        if (selectedClass !== "all") q = q.eq("class", selectedClass);
+        const { data: d, error: e } = await q;
+        if (e) throw e;
+        return d;
+      }
       return data;
     },
   });
@@ -77,31 +86,37 @@ const Reports = () => {
     let filename = "";
 
     if (reportType === "all" || reportType === "students") {
-      data = students.map((s) => ({
+      data = students.map((s: any) => ({
         "Student ID": s.student_id,
         Name: s.name,
         "Roll Number": s.roll_number,
         Class: s.class,
         Section: s.section || "-",
         Contact: s.contact || "-",
-        "Total Fee": s.total_fee,
-        "Fee Paid": s.fee_paid,
-        "Fee Due": s.total_fee - s.fee_paid,
+        "Previous Year Balance": s.previous_year_balance ?? 0,
+        "Current Year Fees": s.current_year_fees ?? s.total_fee,
+        "Fee Paid (This Year)": s.fee_paid_current_year ?? s.fee_paid ?? 0,
+        "Total Due": (s.total_due ?? ( (s.total_fee ?? s.current_year_fees) + (s.previous_year_balance ?? 0) - (s.fee_paid_current_year ?? s.fee_paid ?? 0) )),
         "Attendance %": s.attendance_percentage,
       }));
       filename = "Student_Report.xlsx";
     }
 
     if (reportType === "fees") {
-      data = students.map((s) => ({
-        "Student ID": s.student_id,
-        Name: s.name,
-        Class: s.class,
-        "Total Fee": s.total_fee,
-        "Fee Paid": s.fee_paid,
-        "Fee Due": s.total_fee - s.fee_paid,
-        Status: s.fee_paid >= s.total_fee ? "Paid" : s.fee_paid > 0 ? "Partial" : "Pending",
-      }));
+      data = students.map((s: any) => {
+        const paid = s.fee_paid_current_year ?? s.fee_paid ?? 0;
+        const total = s.current_year_fees ?? s.total_fee;
+        const due = (s.total_due ?? (total + (s.previous_year_balance ?? 0) - paid));
+        return {
+          "Student ID": s.student_id,
+          Name: s.name,
+          Class: s.class,
+          "Total Fee": total,
+          "Fee Paid": paid,
+          "Fee Due": due,
+          Status: paid >= total ? "Paid" : paid > 0 && due > 0 ? "Partial" : "Pending",
+        };
+      });
       filename = "Fee_Report.xlsx";
     }
 

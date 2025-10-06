@@ -34,7 +34,7 @@ const PaymentDialog = ({ open, onOpenChange, onSuccess, userId }: PaymentDialogP
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("id, student_id, name, roll_number, class, section, total_fee, fee_paid")
+        .select("id, student_id, name, roll_number, class, section, total_fee, fee_paid, fee_paid_current_year")
         .order("name");
       if (error) throw error;
       return data;
@@ -121,7 +121,9 @@ const PaymentDialog = ({ open, onOpenChange, onSuccess, userId }: PaymentDialogP
     onOpenChange(false);
   };
 
-  const feeDue = selectedStudent ? selectedStudent.total_fee - selectedStudent.fee_paid : 0;
+  // Use fee_paid_current_year if present; otherwise fall back to legacy fee_paid
+  const paidThisYear = selectedStudent ? (selectedStudent.fee_paid_current_year ?? selectedStudent.fee_paid ?? 0) : 0;
+  const feeDue = selectedStudent ? (selectedStudent.total_fee + (selectedStudent.previous_year_balance ?? 0) - paidThisYear) : 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -197,8 +199,8 @@ const PaymentDialog = ({ open, onOpenChange, onSuccess, userId }: PaymentDialogP
                   <span className="font-medium">Rs. {selectedStudent.total_fee.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Already Paid:</span>
-                  <span className="font-medium">Rs. {selectedStudent.fee_paid.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">Already Paid (This Year):</span>
+                  <span className="font-medium">Rs. {paidThisYear.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="text-sm font-semibold">Fee Due:</span>

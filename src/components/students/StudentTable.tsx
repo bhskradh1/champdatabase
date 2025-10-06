@@ -37,8 +37,11 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
   const [carryForwardMap, setCarryForwardMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    // Fetch carry-forward fee_payments for the currently displayed students and aggregate per student
-    const fetchCarryForwards = async () => {
+    // Fetch carry-forward and outstanding_due fee_payments for the currently displayed
+    // students and aggregate per student so we can subtract these ledger adjustments
+    // from the displayed "fee_paid" in the UI. This is a client-side safety net
+    // for deployments where the DB trigger hasn't been migrated yet.
+    const fetchAdjustments = async () => {
       try {
         const ids = students.map(s => s.id);
         if (ids.length === 0) {
@@ -50,10 +53,10 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
           .from("fee_payments")
           .select("student_id, amount, payment_method")
           .in("student_id", ids)
-          .in("payment_method", ["carry_forward"]);
+          .in("payment_method", ["carry_forward", "outstanding_due"]);
 
         if (error) {
-          console.error("Failed to load carry-forward payments", error);
+          console.error("Failed to load fee adjustment payments", error);
           setCarryForwardMap({});
           return;
         }
@@ -72,7 +75,7 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
       }
     };
 
-    fetchCarryForwards();
+    fetchAdjustments();
   }, [students]);
 
   const handleDelete = async (id: string) => {
@@ -159,10 +162,13 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                 </TableCell>
                 <TableCell>{student.contact || "-"}</TableCell>
                 <TableCell>Rs. {student.total_fee.toLocaleString()}</TableCell>
-                {/* Displayed paid should exclude previous-year carry-forwards recorded at promotion */}
+                {/* Displayed paid should exclude previous-year carry-forward/outstanding adjustments */}
                 {(() => {
-                  const carry = carryForwardMap[student.id] || 0;
-                  const displayedPaid = Math.max(0, student.fee_paid - carry);
+                  const adjustments = carryForwardMap[student.id] || 0;
+                  // If the DB side hasn't yet excluded adjustments from fee_paid, subtract
+                  // them on the client for display purposes so promoted students appear
+                  // with fee_paid = 0 as intended.
+                  const displayedPaid = Math.max(0, student.fee_paid - adjustments);
                   const displayedDue = Math.max(0, student.total_fee - displayedPaid);
                   return (
                     <>

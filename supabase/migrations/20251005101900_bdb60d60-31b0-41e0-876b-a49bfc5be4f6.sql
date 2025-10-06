@@ -114,13 +114,32 @@ $$ LANGUAGE SQL STABLE;
 CREATE OR REPLACE FUNCTION public.update_student_fee_paid()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Only count actual payments towards fee_paid. Exclude ledger adjustments
+  -- such as carry_forward and outstanding_due which represent previous-year
+  -- adjustments and should not be treated as payments for the current year.
   UPDATE public.students
   SET fee_paid = (
     SELECT COALESCE(SUM(amount), 0)
     FROM public.fee_payments
     WHERE student_id = NEW.student_id
+      AND (payment_method IS NULL OR payment_method NOT IN ('carry_forward', 'outstanding_due'))
   )
   WHERE id = NEW.student_id;
+  -- Also maintain a separate column for payments made in the current year.
+  -- This column will be used for display and reporting as `fee_paid_current_year`.
+  BEGIN
+    UPDATE public.students
+    SET fee_paid_current_year = (
+      SELECT COALESCE(SUM(amount), 0)
+      FROM public.fee_payments
+      WHERE student_id = NEW.student_id
+        AND (payment_method IS NULL OR payment_method NOT IN ('carry_forward', 'outstanding_due'))
+    )
+    WHERE id = NEW.student_id;
+  EXCEPTION WHEN undefined_column THEN
+    -- If the column doesn't exist yet (older schema), ignore and continue
+    NULL;
+  END;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
