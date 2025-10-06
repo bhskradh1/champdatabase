@@ -40,21 +40,25 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
         <head>
           <title>Fee Payment Receipt - ${payment.students.name}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
             .receipt { max-width: 600px; margin: 0 auto; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
-            .school-name { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
-            .receipt-title { font-size: 16px; color: #666; }
-            .details { margin-bottom: 30px; }
-            .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .school-name { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
+            .receipt-title { font-size: 14px; color: #666; }
+            .details { margin-bottom: 20px; }
+            .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
             .detail-label { font-weight: bold; }
-            .student-info { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-            .payment-info { margin-bottom: 30px; }
-            .amount { font-size: 24px; font-weight: bold; color: #2563eb; }
-            .footer { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 40px; }
-            .signature-line { border-bottom: 1px dashed #000; width: 200px; margin: 20px 0 5px 0; }
+            .student-info { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+            .payment-info { margin-bottom: 20px; }
+            .amount { font-size: 20px; font-weight: bold; color: #2563eb; }
+            .footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 20px; }
+            .signature-line { border-bottom: 1px dashed #000; width: 200px; margin: 15px 0 5px 0; }
             .print-only { display: block; }
-            @media print { .no-print { display: none; } }
+            @media print { 
+              .no-print { display: none; }
+              body { padding: 10px; }
+              .receipt { max-width: 100%; }
+            }
           </style>
         </head>
         <body>
@@ -87,7 +91,7 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-        <div className="flex justify-end gap-2 print:hidden no-print">
+        <div className="flex justify-end gap-2 print:hidden no-print mb-4">
           <Button onClick={handlePrint} size="sm">
             <Printer className="mr-2 h-4 w-4" />
             Print Receipt
@@ -101,12 +105,12 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
           </Button>
         </div>
 
-        <div id="receipt-content" className="bg-white p-8 space-y-6">
+        <div id="receipt-content" className="bg-white p-6 space-y-4 print:p-4 print:space-y-3">
           {/* Header */}
-          <div className="text-center border-b-2 border-primary pb-6">
-            <h1 className="text-4xl font-bold text-primary mb-2">Champion English School</h1>
-            <p className="text-lg text-muted-foreground">Fee Payment Receipt</p>
-            <p className="text-sm text-muted-foreground mt-2">
+          <div className="text-center border-b-2 border-primary pb-4 print:pb-3">
+            <h1 className="text-3xl font-bold text-primary mb-1 print:text-2xl">Champion English School</h1>
+            <p className="text-lg text-muted-foreground print:text-base">Fee Payment Receipt</p>
+            <p className="text-sm text-muted-foreground mt-1 print:text-xs">
               Receipt No: {payment.id.slice(0, 8).toUpperCase()} | 
               Date: {formatDate(payment.payment_date)} | 
               Time: {formatTime(payment.created_at)}
@@ -114,24 +118,24 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
           </div>
 
           {/* Student Information */}
-          <div className="bg-muted/50 p-6 rounded-lg">
-            <h3 className="font-bold text-xl border-b pb-3 mb-4">Student Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="bg-muted/50 p-4 rounded-lg print:p-3">
+            <h3 className="font-bold text-lg border-b pb-2 mb-3 print:text-base">Student Information</h3>
+            <div className="grid grid-cols-2 gap-3 print:gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Student Name</p>
-                <p className="font-semibold text-lg">{payment.students.name}</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Student Name</p>
+                <p className="font-semibold text-base print:text-sm">{payment.students.name}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Student ID</p>
-                <p className="font-semibold text-lg">{payment.students.student_id}</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Student ID</p>
+                <p className="font-semibold text-base print:text-sm">{payment.students.student_id}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Roll Number</p>
-                <p className="font-semibold text-lg">{payment.students.roll_number}</p>
+                <p className="text-sm text-muted-foreground print:text-xs">Roll Number</p>
+                <p className="font-semibold text-base print:text-sm">{payment.students.roll_number}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Class & Section</p>
-                <p className="font-semibold text-lg">
+                <p className="text-sm text-muted-foreground print:text-xs">Class & Section</p>
+                <p className="font-semibold text-base print:text-sm">
                   {payment.students.class} {payment.students.section && `- ${payment.students.section}`}
                 </p>
               </div>
@@ -139,84 +143,84 @@ const ReceiptPrint = ({ payment, open, onOpenChange }: ReceiptPrintProps) => {
           </div>
 
           {/* Payment Details */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-xl border-b pb-3">Payment Details</h3>
+          <div className="space-y-3 print:space-y-2">
+            <h3 className="font-bold text-lg border-b pb-2 print:text-base">Payment Details</h3>
             
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-4 print:gap-3">
+              <div className="space-y-2 print:space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Payment Method:</span>
-                  <span className="font-semibold capitalize">{payment.payment_method}</span>
+                  <span className="text-muted-foreground print:text-xs">Payment Method:</span>
+                  <span className="font-semibold capitalize print:text-sm">{payment.payment_method}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Payment Date:</span>
-                  <span className="font-semibold">{formatDate(payment.payment_date)}</span>
+                  <span className="text-muted-foreground print:text-xs">Payment Date:</span>
+                  <span className="font-semibold print:text-sm">{formatDate(payment.payment_date)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Transaction Time:</span>
-                  <span className="font-semibold">{formatTime(payment.created_at)}</span>
+                  <span className="text-muted-foreground print:text-xs">Transaction Time:</span>
+                  <span className="font-semibold print:text-sm">{formatTime(payment.created_at)}</span>
                 </div>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2 print:space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Fee:</span>
-                  <span className="font-semibold">₹{payment.students.total_fee.toLocaleString()}</span>
+                  <span className="text-muted-foreground print:text-xs">Total Fee:</span>
+                  <span className="font-semibold print:text-sm">Rs. {payment.students.total_fee.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Previously Paid:</span>
-                  <span className="font-semibold">₹{(payment.students.fee_paid - payment.amount).toLocaleString()}</span>
+                  <span className="text-muted-foreground print:text-xs">Previously Paid:</span>
+                  <span className="font-semibold print:text-sm">Rs. {(payment.students.fee_paid - payment.amount).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span className="text-lg font-bold">Amount Paid:</span>
-                  <span className="text-2xl font-bold text-primary">₹{payment.amount.toLocaleString()}</span>
+                <div className="flex justify-between border-t pt-2 print:pt-1">
+                  <span className="text-base font-bold print:text-sm">Amount Paid:</span>
+                  <span className="text-xl font-bold text-primary print:text-lg">Rs. {payment.amount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Remaining Due:</span>
-                  <span className="font-semibold text-destructive">₹{feeDue.toLocaleString()}</span>
+                  <span className="text-muted-foreground print:text-xs">Remaining Due:</span>
+                  <span className="font-semibold text-destructive print:text-sm">Rs. {feeDue.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
             {payment.remarks && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">Remarks:</p>
-                <p className="font-medium">{payment.remarks}</p>
+              <div className="bg-blue-50 p-3 rounded-lg print:p-2">
+                <p className="text-sm text-muted-foreground print:text-xs">Remarks:</p>
+                <p className="font-medium print:text-sm">{payment.remarks}</p>
               </div>
             )}
           </div>
 
           {/* Payment Status */}
-          <div className="bg-green-50 p-4 rounded-lg">
+          <div className="bg-green-50 p-3 rounded-lg print:p-2">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="font-semibold text-green-800">Payment Successfully Recorded</span>
+              <div className="w-3 h-3 bg-green-500 rounded-full print:w-2 print:h-2"></div>
+              <span className="font-semibold text-green-800 print:text-sm">Payment Successfully Recorded</span>
             </div>
-            <p className="text-sm text-green-700 mt-1">
+            <p className="text-sm text-green-700 mt-1 print:text-xs">
               This payment has been recorded in the school's fee management system.
             </p>
           </div>
 
           {/* Footer */}
-          <div className="border-t pt-6 mt-8">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="border-t pt-4 mt-4 print:pt-3 print:mt-3">
+            <div className="grid grid-cols-2 gap-6 print:gap-4">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Received By</p>
+                <p className="text-sm text-muted-foreground mb-2 print:text-xs">Received By</p>
                 <div className="signature-line"></div>
-                <p className="text-xs text-muted-foreground mt-1">Authorized Signature</p>
+                <p className="text-xs text-muted-foreground mt-1 print:text-[10px]">Authorized Signature</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                <p className="text-sm text-muted-foreground mb-2 print:text-xs">Parent/Guardian Signature</p>
                 <div className="signature-line"></div>
-                <p className="text-xs text-muted-foreground mt-1">Date: _______________</p>
+                <p className="text-xs text-muted-foreground mt-1 print:text-[10px]">Date: _______________</p>
               </div>
             </div>
             
-            <div className="mt-8 text-center">
-              <p className="text-xs text-muted-foreground">
+            <div className="mt-4 text-center print:mt-3">
+              <p className="text-xs text-muted-foreground print:text-[10px]">
                 This is a computer-generated receipt. Please preserve it for your records.
               </p>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground mt-1 print:text-[10px]">
                 For any queries, contact the school administration.
               </p>
             </div>
