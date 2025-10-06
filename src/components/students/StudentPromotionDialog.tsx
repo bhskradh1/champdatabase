@@ -1,0 +1,377 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Calculator, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from "lucide-react";
+
+interface Student {
+  id: string;
+  student_id: string;
+  name: string;
+  roll_number: string;
+  class: string;
+  section: string | null;
+  total_fee: number;
+  fee_paid: number;
+}
+
+interface StudentPromotionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  student: Student | null;
+  onSuccess: () => void;
+}
+
+const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: StudentPromotionDialogProps) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [nextClass, setNextClass] = useState("");
+  const [nextSection, setNextSection] = useState("");
+  const [newTotalFee, setNewTotalFee] = useState(0);
+  const [newRollNumber, setNewRollNumber] = useState("");
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+
+  // Class progression mapping
+  const classProgression: Record<string, string> = {
+    "Nursery": "LKG",
+    "LKG": "UKG", 
+    "UKG": "1st",
+    "1st": "2nd",
+    "2nd": "3rd",
+    "3rd": "4th",
+    "4th": "5th",
+    "5th": "6th",
+    "6th": "7th",
+    "7th": "8th",
+    "8th": "9th",
+    "9th": "10th",
+    "10th": "11th",
+    "11th": "12th",
+    "12th": "Graduated"
+  };
+
+  // Default sections for each class
+  const defaultSections: Record<string, string[]> = {
+    "Nursery": ["A", "B"],
+    "LKG": ["A", "B"],
+    "UKG": ["A", "B"],
+    "1st": ["A", "B", "C"],
+    "2nd": ["A", "B", "C"],
+    "3rd": ["A", "B", "C"],
+    "4th": ["A", "B", "C"],
+    "5th": ["A", "B", "C"],
+    "6th": ["A", "B", "C"],
+    "7th": ["A", "B", "C"],
+    "8th": ["A", "B", "C"],
+    "9th": ["A", "B", "C"],
+    "10th": ["A", "B", "C"],
+    "11th": ["Science", "Commerce", "Arts"],
+    "12th": ["Science", "Commerce", "Arts"]
+  };
+
+  // Standard fees for each class (you can modify these)
+  const standardFees: Record<string, number> = {
+    "Nursery": 15000,
+    "LKG": 18000,
+    "UKG": 20000,
+    "1st": 25000,
+    "2nd": 25000,
+    "3rd": 25000,
+    "4th": 25000,
+    "5th": 25000,
+    "6th": 30000,
+    "7th": 30000,
+    "8th": 30000,
+    "9th": 35000,
+    "10th": 35000,
+    "11th": 40000,
+    "12th": 40000
+  };
+
+  useEffect(() => {
+    if (student) {
+      const nextClassValue = classProgression[student.class];
+      setNextClass(nextClassValue);
+      setNewTotalFee(standardFees[nextClassValue] || 0);
+      setAvailableSections(defaultSections[nextClassValue] || []);
+      setNextSection(defaultSections[nextClassValue]?.[0] || "");
+    }
+  }, [student]);
+
+  const currentFeeDue = student ? student.total_fee - student.fee_paid : 0;
+  const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
+  const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
+  const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
+
+  const handlePromote = async () => {
+    if (!student || !nextClass) return;
+
+    setLoading(true);
+    try {
+      // Check if student already exists in next class
+      const { data: existingStudent } = await supabase
+        .from("students")
+        .select("id")
+        .eq("student_id", student.student_id)
+        .eq("class", nextClass)
+        .single();
+
+      if (existingStudent) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Student already exists in the next class",
+        });
+        return;
+      }
+
+      // Create new student record for next class
+      const { data: session } = await supabase.auth.getSession();
+      
+      const { data: newStudent, error: createError } = await supabase
+        .from("students")
+        .insert({
+          student_id: student.student_id,
+          name: student.name,
+          roll_number: newRollNumber || `${nextClass}-${Date.now()}`,
+          class: nextClass,
+          section: nextSection,
+          total_fee: adjustedNewFee,
+          fee_paid: carryForwardAmount, // Carry forward excess payment
+          created_by: session.session?.user.id || "",
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // If there was excess payment, create a fee payment record
+      if (carryForwardAmount > 0) {
+        await supabase
+          .from("fee_payments")
+          .insert({
+            student_id: newStudent.id,
+            amount: carryForwardAmount,
+            payment_method: "carry_forward",
+            payment_date: new Date().toISOString().split("T")[0],
+            remarks: `Carry forward from ${student.class} class`,
+            created_by: session.session?.user.id || "",
+          });
+      }
+
+      // If there was outstanding due, create a fee payment record for the due amount
+      if (outstandingDue > 0) {
+        await supabase
+          .from("fee_payments")
+          .insert({
+            student_id: newStudent.id,
+            amount: outstandingDue,
+            payment_method: "outstanding_due",
+            payment_date: new Date().toISOString().split("T")[0],
+            remarks: `Outstanding due from ${student.class} class`,
+            created_by: session.session?.user.id || "",
+          });
+      }
+
+      toast({
+        title: "Success",
+        description: `Student promoted to ${nextClass} successfully`,
+      });
+
+      onSuccess();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!student) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Promote Student to Next Class
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Current Student Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Current Student Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Student Name</Label>
+                  <p className="font-medium">{student.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Student ID</Label>
+                  <p className="font-medium">{student.student_id}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Current Class</Label>
+                  <p className="font-medium">{student.class} {student.section && `- ${student.section}`}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Roll Number</Label>
+                  <p className="font-medium">{student.roll_number}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fee Calculation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Fee Calculation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Current Total Fee</Label>
+                  <p className="font-medium">Rs. {student.total_fee.toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Current Fee Paid</Label>
+                  <p className="font-medium">Rs. {student.fee_paid.toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Current Fee Due</Label>
+                  <p className={`font-medium ${currentFeeDue > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                    Rs. {currentFeeDue.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Next Class Fee</Label>
+                  <p className="font-medium">Rs. {newTotalFee.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Fee Adjustment Alerts */}
+              {carryForwardAmount > 0 && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Excess Payment:</strong> Rs. {carryForwardAmount.toLocaleString()} will be carried forward to next class
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {outstandingDue > 0 && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Outstanding Due:</strong> Rs. {outstandingDue.toLocaleString()} will be added to next class fees
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <Label className="text-lg font-semibold">Adjusted Next Class Fee</Label>
+                  <p className="text-xl font-bold text-primary">Rs. {adjustedNewFee.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Next Class Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Next Class Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nextClass">Next Class</Label>
+                  <Select value={nextClass} onValueChange={setNextClass}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select next class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(classProgression).map(([current, next]) => (
+                        <SelectItem key={next} value={next}>
+                          {next}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="nextSection">Section</Label>
+                  <Select value={nextSection} onValueChange={setNextSection}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSections.map((section) => (
+                        <SelectItem key={section} value={section}>
+                          {section}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newRollNumber">New Roll Number</Label>
+                  <Input
+                    id="newRollNumber"
+                    value={newRollNumber}
+                    onChange={(e) => setNewRollNumber(e.target.value)}
+                    placeholder="Enter new roll number"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newTotalFee">New Total Fee</Label>
+                  <Input
+                    id="newTotalFee"
+                    type="number"
+                    value={newTotalFee}
+                    onChange={(e) => setNewTotalFee(Number(e.target.value))}
+                    placeholder="Enter new total fee"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePromote} disabled={loading || !nextClass}>
+              {loading ? "Promoting..." : "Promote Student"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default StudentPromotionDialog;

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, DollarSign } from "lucide-react";
+import { Pencil, Trash2, DollarSign, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import EditStudentDialog from "./EditStudentDialog";
 import FeePaymentDialog from "./FeePaymentDialog";
+import StudentPromotionDialog from "./StudentPromotionDialog";
 
 interface Student {
   id: string;
@@ -32,6 +33,7 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
   const { toast } = useToast();
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [feePaymentStudent, setFeePaymentStudent] = useState<Student | null>(null);
+  const [promotionStudent, setPromotionStudent] = useState<Student | null>(null);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
@@ -58,6 +60,27 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
     if (due === 0) return <Badge className="bg-green-500">Paid</Badge>;
     if (paid > 0) return <Badge className="bg-amber-500">Partial</Badge>;
     return <Badge variant="destructive">Pending</Badge>;
+  };
+
+  const canPromote = (student: Student) => {
+    const classProgression: Record<string, string> = {
+      "Nursery": "LKG",
+      "LKG": "UKG", 
+      "UKG": "1st",
+      "1st": "2nd",
+      "2nd": "3rd",
+      "3rd": "4th",
+      "4th": "5th",
+      "5th": "6th",
+      "6th": "7th",
+      "7th": "8th",
+      "8th": "9th",
+      "9th": "10th",
+      "10th": "11th",
+      "11th": "12th",
+      "12th": "Graduated"
+    };
+    return classProgression[student.class] !== "Graduated";
   };
 
   return (
@@ -110,6 +133,16 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                     >
                       <DollarSign className="h-4 w-4 text-green-600" />
                     </Button>
+                    {canPromote(student) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setPromotionStudent(student)}
+                        title="Promote to Next Class"
+                      >
+                        <TrendingUp className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -145,6 +178,13 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
         open={!!feePaymentStudent}
         onOpenChange={(open) => !open && setFeePaymentStudent(null)}
         student={feePaymentStudent}
+        onSuccess={onRefetch}
+      />
+
+      <StudentPromotionDialog
+        open={!!promotionStudent}
+        onOpenChange={(open) => !open && setPromotionStudent(null)}
+        student={promotionStudent}
         onSuccess={onRefetch}
       />
     </div>

@@ -9,15 +9,17 @@ import AddStudentDialog from "@/components/students/AddStudentDialog";
 import ExcelUploadDialog from "@/components/students/ExcelUploadDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Upload } from "lucide-react";
+import { Plus, Search, Upload, TrendingUp } from "lucide-react";
 
 import FilterSection from "@/components/students/FilterSection";
+import BulkPromotionDialog from "@/components/students/BulkPromotionDialog";
 
 const Students = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [excelDialogOpen, setExcelDialogOpen] = useState(false);
+  const [bulkPromotionOpen, setBulkPromotionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [feeStatusFilter, setFeeStatusFilter] = useState("all");
   const [attendanceFilter, setAttendanceFilter] = useState("all");
@@ -70,6 +72,10 @@ const Students = () => {
             <p className="text-muted-foreground">Add, view, edit, and manage student information</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setBulkPromotionOpen(true)} variant="outline" size="lg">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Bulk Promote
+            </Button>
             <Button onClick={() => setExcelDialogOpen(true)} variant="outline" size="lg">
               <Upload className="mr-2 h-4 w-4" />
               Upload Excel
@@ -139,6 +145,16 @@ const Students = () => {
         />
         <AddStudentDialog open={dialogOpen} onOpenChange={setDialogOpen} onSuccess={refetch} userId={user?.id || ""} />
         <ExcelUploadDialog open={excelDialogOpen} onOpenChange={setExcelDialogOpen} onSuccess={refetch} userId={user?.id || ""} />
+        
+        {classFilter !== "all" && (
+          <BulkPromotionDialog
+            open={bulkPromotionOpen}
+            onOpenChange={setBulkPromotionOpen}
+            students={students?.filter(s => s.class === classFilter) || []}
+            currentClass={classFilter}
+            onSuccess={refetch}
+          />
+        )}
       </main>
     </div>
   );
