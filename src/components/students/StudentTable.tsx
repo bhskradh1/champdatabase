@@ -99,10 +99,23 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
   };
 
   const getFeesStatus = (total: number, paid: number) => {
-    const due = total - paid;
-    if (due === 0) return <Badge className="bg-green-500">Paid</Badge>;
-    if (paid > 0) return <Badge className="bg-amber-500">Partial</Badge>;
-    return <Badge variant="destructive">Pending</Badge>;
+  const due = total - paid;
+
+  if (due < 0) {
+    // Extra fees paid
+    return <Badge className="bg-blue-500">Extra Paid</Badge>;
+  }
+
+  if (due === 0) {
+    return <Badge className="bg-green-500">Paid</Badge>;
+  }
+
+  if (paid > 0) {
+    return <Badge className="bg-amber-500">Partial</Badge>;
+  }
+
+  return <Badge variant="destructive">Pending</Badge>;
+
   };
 
   const canPromote = (student: Student) => {
@@ -174,7 +187,11 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                   return (
                     <>
                       <TableCell>Rs. {displayedPaid.toLocaleString()}</TableCell>
-                      <TableCell>Rs. {Math.max(0, displayedDue).toLocaleString()}</TableCell>
+                     <TableCell>
+                       {displayedDue < 0 
+                          ? `- Rs. ${Math.abs(displayedDue).toLocaleString()} (Extra Paid)` 
+                          : `Rs. ${displayedDue.toLocaleString()}`}
+                     </TableCell>
                       <TableCell>{getFeesStatus(student.total_fee + prevBal, displayedPaid)}</TableCell>
                     </>
                   );
