@@ -166,7 +166,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground print:text-xs">Previously Paid:</span>
-                  <span className="font-semibold print:text-sm">Rs. {(payment.fee_paid - payment.amount).toLocaleString()}</span>
+                  <span className="font-semibold print:text-sm">Rs. {payment.fee_paid.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 print:pt-1">
                   <span className="text-base font-bold print:text-sm">Amount Paid:</span>
