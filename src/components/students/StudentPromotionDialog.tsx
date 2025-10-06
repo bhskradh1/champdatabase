@@ -132,13 +132,31 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
         return;
       }
 
-      // Create new student record for next class
+      // Generate unique student ID for next class
       const { data: session } = await supabase.auth.getSession();
+      const baseStudentId = student.student_id;
+      let newStudentId = `${baseStudentId}-${nextClass}`;
       
+      // Check if this new student ID already exists
+      let counter = 1;
+      let finalStudentId = newStudentId;
+      while (true) {
+        const { data: checkExisting } = await supabase
+          .from("students")
+          .select("id")
+          .eq("student_id", finalStudentId)
+          .single();
+        
+        if (!checkExisting) break;
+        finalStudentId = `${newStudentId}-${counter}`;
+        counter++;
+      }
+
+      // Create new student record for next class
       const { data: newStudent, error: createError } = await supabase
         .from("students")
         .insert({
-          student_id: student.student_id,
+          student_id: finalStudentId,
           name: student.name,
           roll_number: newRollNumber || `${nextClass}-${Date.now()}`,
           class: nextClass,

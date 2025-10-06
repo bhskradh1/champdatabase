@@ -166,16 +166,35 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
       
       // Create new student records for next class
       const newStudents = await Promise.all(
-        selected.map(async (student) => {
+        selected.map(async (student, index) => {
           const currentFeeDue = student.total_fee - student.fee_paid;
           const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
           const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
           const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
 
+          // Generate unique student ID for next class
+          const baseStudentId = student.student_id;
+          let newStudentId = `${baseStudentId}-${nextClass}`;
+          
+          // Check if this new student ID already exists
+          let counter = 1;
+          let finalStudentId = newStudentId;
+          while (true) {
+            const { data: checkExisting } = await supabase
+              .from("students")
+              .select("id")
+              .eq("student_id", finalStudentId)
+              .single();
+            
+            if (!checkExisting) break;
+            finalStudentId = `${newStudentId}-${counter}`;
+            counter++;
+          }
+
           const { data: newStudent, error: createError } = await supabase
             .from("students")
             .insert({
-              student_id: student.student_id,
+              student_id: finalStudentId,
               name: student.name,
               roll_number: `${nextClass}-${student.roll_number}`,
               class: nextClass,
