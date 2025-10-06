@@ -79,7 +79,7 @@ const Payments = () => {
             fee_paid
           )
         `)
-        .order("payment_date", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
