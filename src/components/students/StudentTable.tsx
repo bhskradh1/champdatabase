@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,46 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [feePaymentStudent, setFeePaymentStudent] = useState<Student | null>(null);
   const [promotionStudent, setPromotionStudent] = useState<Student | null>(null);
+  const [carryForwardMap, setCarryForwardMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Fetch carry-forward fee_payments for the currently displayed students and aggregate per student
+    const fetchCarryForwards = async () => {
+      try {
+        const ids = students.map(s => s.id);
+        if (ids.length === 0) {
+          setCarryForwardMap({});
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("fee_payments")
+          .select("student_id, amount, payment_method")
+          .in("student_id", ids)
+          .in("payment_method", ["carry_forward"]);
+
+        if (error) {
+          console.error("Failed to load carry-forward payments", error);
+          setCarryForwardMap({});
+          return;
+        }
+
+        const map: Record<string, number> = {};
+        (data || []).forEach((p: any) => {
+          const sid = p.student_id as string;
+          const amt = Number(p.amount) || 0;
+          map[sid] = (map[sid] || 0) + amt;
+        });
+
+        setCarryForwardMap(map);
+      } catch (err) {
+        console.error(err);
+        setCarryForwardMap({});
+      }
+    };
+
+    fetchCarryForwards();
+  }, [students]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
@@ -119,9 +159,19 @@ const StudentTable = ({ students, onRefetch }: StudentTableProps) => {
                 </TableCell>
                 <TableCell>{student.contact || "-"}</TableCell>
                 <TableCell>Rs. {student.total_fee.toLocaleString()}</TableCell>
-                <TableCell>Rs. {student.fee_paid.toLocaleString()}</TableCell>
-                <TableCell>Rs. {(student.total_fee - student.fee_paid).toLocaleString()}</TableCell>
-                <TableCell>{getFeesStatus(student.total_fee, student.fee_paid)}</TableCell>
+                {/* Displayed paid should exclude previous-year carry-forwards recorded at promotion */}
+                {(() => {
+                  const carry = carryForwardMap[student.id] || 0;
+                  const displayedPaid = Math.max(0, student.fee_paid - carry);
+                  const displayedDue = Math.max(0, student.total_fee - displayedPaid);
+                  return (
+                    <>
+                      <TableCell>Rs. {displayedPaid.toLocaleString()}</TableCell>
+                      <TableCell>Rs. {displayedDue.toLocaleString()}</TableCell>
+                      <TableCell>{getFeesStatus(student.total_fee, displayedPaid)}</TableCell>
+                    </>
+                  );
+                })()}
                 <TableCell>{student.attendance_percentage}%</TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
