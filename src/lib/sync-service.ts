@@ -14,11 +14,9 @@ class SyncService {
   private syncListeners: ((status: SyncStatus) => void)[] = [];
 
   constructor() {
-    // Listen for online/offline events
     window.addEventListener('online', this.handleOnline.bind(this));
     window.addEventListener('offline', this.handleOffline.bind(this));
-    
-    // Start periodic sync when online
+
     if (this.isOnline) {
       this.startPeriodicSync();
     }
@@ -37,7 +35,6 @@ class SyncService {
   }
 
   private startPeriodicSync() {
-    // Sync every 30 seconds when online
     setInterval(() => {
       if (this.isOnline && !this.syncInProgress) {
         this.syncAllData();
@@ -49,9 +46,7 @@ class SyncService {
     this.syncListeners.push(listener);
     return () => {
       const index = this.syncListeners.indexOf(listener);
-      if (index > -1) {
-        this.syncListeners.splice(index, 1);
-      }
+      if (index > -1) this.syncListeners.splice(index, 1);
     };
   }
 
@@ -63,13 +58,12 @@ class SyncService {
       isSyncing: this.syncInProgress
     };
 
-    // Count pending changes
     offlineDb.getPendingSyncRecords().then(pending => {
       status.pendingChanges = 
         pending.students.length + 
         pending.payments.length + 
         pending.attendance.length;
-      
+
       this.syncListeners.forEach(listener => listener(status));
     });
   }
@@ -81,18 +75,11 @@ class SyncService {
     this.notifyListeners();
 
     try {
-      // Sync students
       await this.syncStudents();
-      
-      // Sync fee payments
       await this.syncFeePayments();
-      
-      // Sync attendance records
       await this.syncAttendanceRecords();
-      
-      // Update last sync time
+
       localStorage.setItem('lastSync', new Date().toISOString());
-      
     } catch (error) {
       console.error('Sync failed:', error);
     } finally {
@@ -102,12 +89,11 @@ class SyncService {
   }
 
   private async syncStudents() {
-    const pendingStudents = await offlineDb.students.where('_sync_pending').equals(1).toArray();
-    
+    const pendingStudents = await offlineDb.students.where('_sync_pending').equals(true).toArray();
+
     for (const student of pendingStudents) {
       try {
         if (student._offline_created) {
-          // Create new student in Supabase
           const { data, error } = await supabase
             .from('students')
             .insert({
@@ -129,12 +115,9 @@ class SyncService {
             .single();
 
           if (error) throw error;
-          
-          // Mark as synced
+
           await offlineDb.markAsSynced('students', student.id);
-          
         } else if (student._offline_updated) {
-          // Update existing student in Supabase
           const { error } = await supabase
             .from('students')
             .update({
@@ -153,25 +136,21 @@ class SyncService {
             .eq('id', student.id);
 
           if (error) throw error;
-          
-          // Mark as synced
+
           await offlineDb.markAsSynced('students', student.id);
         }
-        
       } catch (error) {
         console.error(`Failed to sync student ${student.id}:`, error);
-        // Could implement retry logic here
       }
     }
   }
 
   private async syncFeePayments() {
-    const pendingPayments = await offlineDb.feePayments.where('_sync_pending').equals(1).toArray();
-    
+    const pendingPayments = await offlineDb.feePayments.where('_sync_pending').equals(true).toArray();
+
     for (const payment of pendingPayments) {
       try {
         if (payment._offline_created) {
-          // Create new payment in Supabase
           const { data, error } = await supabase
             .from('fee_payments')
             .insert({
@@ -187,11 +166,9 @@ class SyncService {
             .single();
 
           if (error) throw error;
-          
-          // Mark as synced
+
           await offlineDb.markAsSynced('feePayments', payment.id);
         }
-        
       } catch (error) {
         console.error(`Failed to sync payment ${payment.id}:`, error);
       }
@@ -199,12 +176,11 @@ class SyncService {
   }
 
   private async syncAttendanceRecords() {
-    const pendingAttendance = await offlineDb.attendanceRecords.where('_sync_pending').equals(1).toArray();
-    
+    const pendingAttendance = await offlineDb.attendanceRecords.where('_sync_pending').equals(true).toArray();
+
     for (const record of pendingAttendance) {
       try {
         if (record._offline_created) {
-          // Create new attendance record in Supabase
           const { data, error } = await supabase
             .from('attendance_records')
             .insert({
@@ -219,75 +195,12 @@ class SyncService {
             .single();
 
           if (error) throw error;
-          
-          // Mark as synced
+
           await offlineDb.markAsSynced('attendanceRecords', record.id);
         }
-        
       } catch (error) {
         console.error(`Failed to sync attendance record ${record.id}:`, error);
       }
-    }
-  }
-
-  // Download data from Supabase to local database
-  public async downloadAllData() {
-    if (!this.isOnline) return;
-
-    try {
-      // Download students
-      const { data: students, error: studentsError } = await supabase
-        .from('students')
-        .select('*');
-      
-      if (studentsError) throw studentsError;
-      
-      if (students) {
-        await offlineDb.students.clear();
-        await offlineDb.students.bulkAdd(students.map(s => ({
-          ...s,
-          _sync_pending: false,
-          _last_sync: new Date().toISOString()
-        })));
-      }
-
-      // Download fee payments
-      const { data: payments, error: paymentsError } = await supabase
-        .from('fee_payments')
-        .select('*');
-      
-      if (paymentsError) throw paymentsError;
-      
-      if (payments) {
-        await offlineDb.feePayments.clear();
-        await offlineDb.feePayments.bulkAdd(payments.map(p => ({
-          ...p,
-          _sync_pending: false,
-          _last_sync: new Date().toISOString()
-        })));
-      }
-
-      // Download attendance records
-      const { data: attendance, error: attendanceError } = await supabase
-        .from('attendance_records')
-        .select('*');
-      
-      if (attendanceError) throw attendanceError;
-      
-      if (attendance) {
-        await offlineDb.attendanceRecords.clear();
-        await offlineDb.attendanceRecords.bulkAdd(attendance.map(a => ({
-          ...a,
-          _sync_pending: false,
-          _last_sync: new Date().toISOString()
-        })));
-      }
-
-      localStorage.setItem('lastSync', new Date().toISOString());
-      
-    } catch (error) {
-      console.error('Failed to download data:', error);
-      throw error;
     }
   }
 
@@ -301,5 +214,4 @@ class SyncService {
   }
 }
 
-// Export singleton instance
 export const syncService = new SyncService();

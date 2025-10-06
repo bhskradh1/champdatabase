@@ -43,38 +43,38 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
   const classProgression: Record<string, string> = {
     "Nursery": "LKG",
     "LKG": "UKG", 
-    "UKG": "1st",
-    "one": "two",
-    "two": "three",
-    "three": "four",
-    "four": "five",
-    "five": "six",
-    "six": "seven",
-    "seven": "eight",
-    "eight": "nine",
-    "nine": "ten",
-    "ten": "eleven",
-    "eleven": "twelve",
-    "twelve": "Graduated"
+    "UKG": "1",
+    "1": "2",
+    "2": "3",
+    "3": "4",
+    "4": "5",
+    "5": "6",
+    "6": "7",
+    "7": "8",
+    "8": "9",
+    "9": "10",
+    "10": "11",
+    "11": "12",
+    "12": "Graduated"
   };
 
   // Default sections for each class
   const defaultSections: Record<string, string[]> = {
-    "Nursery": ["-", "A", "B"],
-    "LKG": ["-", "A", "B"],
-    "UKG": ["-", "A", "B"],
-    "one": ["-", "A", "B", "C"],
-    "two": ["-", "A", "B", "C"],
-    "three": ["-", "A", "B", "C"],
-    "four": ["-", "A", "B", "C"],
-    "five": ["-", "A", "B", "C"],
-    "six": ["-", "A", "B", "C"],
-    "seven": ["-", "A", "B", "C"],
-    "eight": ["-", "A", "B", "C"],
-    "nine": ["-", "A", "B", "C"],
-    "ten": ["-", "A", "B", "C"],
-    "eleven": ["Science", "Commerce", "Arts"],
-    "twelve": ["Science", "Commerce", "Arts"]
+    "Nursery": ["X", "A", "B"],
+    "LKG": ["X", "A", "B"],
+    "UKG": ["X", "A", "B"],
+    "one": ["X", "A", "B", "C"],
+    "two": ["X", "A", "B", "C"],
+    "three": ["X", "A", "B", "C"],
+    "four": ["X", "A", "B", "C"],
+    "five": ["X", "A", "B", "C"],
+    "six": ["X", "A", "B", "C"],
+    "seven": ["X", "A", "B", "C"],
+    "eight": ["X", "A", "B", "C"],
+    "nine": ["X", "A", "B", "C"],
+    "ten": ["X", "A", "B", "C"],
+    "eleven": ["Science", "Commerce", "H.Management"],
+    "twelve": ["Science", "Commerce", "H.Management"]
   };
 
   // Standard fees for each class (you can modify these)
