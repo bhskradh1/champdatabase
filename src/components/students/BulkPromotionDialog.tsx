@@ -170,7 +170,9 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
           const currentFeeDue = student.total_fee - student.fee_paid;
           const carryForwardAmount = currentFeeDue < 0 ? Math.abs(currentFeeDue) : 0;
           const outstandingDue = currentFeeDue > 0 ? currentFeeDue : 0;
-          const adjustedNewFee = newTotalFee - carryForwardAmount + outstandingDue;
+          // NOTE: inverted logic: carry forward (excess payment) will be ADDED to next year's fee
+          // and outstanding due will be SUBTRACTED from next year's fee (per requested behavior)
+          const adjustedNewFee = newTotalFee + carryForwardAmount - outstandingDue;
 
           // Generate unique student ID for next class
           const baseStudentId = student.student_id;
@@ -233,6 +235,18 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
                 remarks: `Outstanding due from ${student.class} class`,
                 created_by: session.session?.user.id || "",
               });
+          }
+
+          // After successful promotion, delete the previous student record as requested
+          try {
+            await supabase.from("students").delete().eq("id", student.id);
+          } catch (delErr) {
+            // Non-fatal: show a toast but continue
+            toast({
+              variant: "destructive",
+              title: "Warning",
+              description: `Failed to delete previous student record for ${student.name}`,
+            });
           }
 
           return newStudent;
