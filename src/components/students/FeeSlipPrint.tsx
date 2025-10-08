@@ -63,6 +63,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
               box-sizing: border-box;
               padding: 15px;
              overflow: hidden;
+             border-bottom: 1px dashed #ccc; /* optional: shows bottom half is blank */
              }
 
            .no-print {
