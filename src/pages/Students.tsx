@@ -47,7 +47,7 @@ const Students = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const { data: students, refetch } = useQuery<any[]>({
+  const { data: students=null, refetch } = useQuery<any[]>({
     queryKey: ["students"],
     queryFn: async (): Promise<any[]> => {
       // cast to any because generated supabase types may not include newly added columns
