@@ -50,11 +50,27 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
             .footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 20px; }
             .signature-line { border-bottom: 1px dashed #000; width: 200px; margin: 15px 0 5px 0; }
             .print-only { display: block; }
-            @media print { 
-              .no-print { display: none; }
-              body { padding: 10px; }
-              .receipt { max-width: 100%; }
-            }
+           @media print {
+             body {
+               margin: 0;
+               padding: 0;
+              }
+
+            .receipt {
+              width: 100%;
+              height: 50%;           /* Half of A4 page */
+              page-break-after: always; /* Ensures next receipt prints on next half if needed */
+              box-sizing: border-box;
+              padding: 15px;
+             overflow: hidden;
+             }
+
+           .no-print {
+             display: none;
+               }
+           }
+
+            
           </style>
         </head>
         <body>
