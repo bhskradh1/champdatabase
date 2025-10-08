@@ -112,8 +112,8 @@ const Students = () => {
 
         <StudentTable
           students={
-            (students || [])
-              .filter((student) => {
+             students
+             ? students.filter((student) => {
                 // Search filter
                 const query = searchQuery.toLowerCase();
                 const matchesSearch =
@@ -144,6 +144,7 @@ const Students = () => {
 
                 return matchesSearch && matchesFeeStatus && matchesAttendance && matchesClass;
               })
+            : []
           }
           onRefetch={refetch}
         />
