@@ -118,7 +118,8 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
           </Button>
         </div>
 
-        <div id="receipt-content" className="bg-white p-6 space-y-4 print:p-4 print:space-y-3">
+        <div id="receipt-content">
+          <div className=" receipt bg-white p-6 space-y-4 print:p-4 print:space-y-3">
           {/* Header */}
           <div className="text-center border-b-2 border-primary pb-4 print:pb-3">
             <h1 className="text-3xl font-bold text-primary mb-1 print:text-2xl">Champion English School</h1>
@@ -128,6 +129,7 @@ const FeeSlipPrint = ({ payment, onClose }: FeeSlipPrintProps) => {
               Date: {formatDate(payment.payment_date)} | 
               Time: {formatTime(payment.created_at)}
             </p>
+            </div>
           </div>
 
           {/* Student Information */}
