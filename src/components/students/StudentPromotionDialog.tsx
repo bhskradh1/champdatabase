@@ -163,44 +163,16 @@ const StudentPromotionDialog = ({ open, onOpenChange, student, onSuccess }: Stud
           roll_number: newRollNumber || `${nextClass}-${Date.now()}`,
           class: nextClass,
           section: nextSection,
-          total_fee: adjustedNewFee,
-            // Do NOT set fee_paid to previous-year carry-forward here.
-            // Keep fee_paid representing payments made in the current year only.
-            fee_paid: 0,
+          total_fee: newTotalFee,
+          fee_paid: 0,
+          previous_year_balance: outstandingDue,
+          fee_paid_current_year: carryForwardAmount,
           created_by: session.session?.user.id || "",
         })
         .select()
         .single();
 
       if (createError) throw createError;
-
-      // If there was excess payment, create a fee payment record
-      if (carryForwardAmount > 0) {
-        await supabase
-          .from("fee_payments")
-          .insert({
-            student_id: newStudent.id,
-            amount: carryForwardAmount,
-            payment_method: "carry_forward",
-            payment_date: new Date().toISOString().split("T")[0],
-            remarks: `Carry forward from ${student.class} class`,
-            created_by: session.session?.user.id || "",
-          });
-      }
-
-      // If there was outstanding due, create a fee payment record for the due amount
-      if (outstandingDue > 0) {
-        await supabase
-          .from("fee_payments")
-          .insert({
-            student_id: newStudent.id,
-            amount: outstandingDue,
-            payment_method: "outstanding_due",
-            payment_date: new Date().toISOString().split("T")[0],
-            remarks: `Outstanding due from ${student.class} class`,
-            created_by: session.session?.user.id || "",
-          });
-      }
 
       // Attempt to soft-delete the previous student record by setting `deleted_at`.
       // If the column doesn't exist or update fails, fall back to hard delete.
