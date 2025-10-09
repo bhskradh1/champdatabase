@@ -213,16 +213,42 @@ const BulkPromotionDialog = ({ open, onOpenChange, students, currentClass, onSuc
               roll_number: `${nextClass}-${student.roll_number}`,
               class: nextClass,
               section: nextSection,
-              total_fee: newTotalFee,
+              total_fee: adjustedNewFee,
+              // Keep fee_paid representing payments made in the current year only.
               fee_paid: 0,
-              previous_year_balance: outstandingDue,
-              fee_paid_current_year: carryForwardAmount,
               created_by: session.session?.user.id || "",
             })
             .select()
             .single();
 
           if (createError) throw createError;
+
+          // Create fee payment records if needed
+          if (carryForwardAmount > 0) {
+            await supabase
+              .from("fee_payments")
+              .insert({
+                student_id: newStudent.id,
+                amount: carryForwardAmount,
+                payment_method: "carry_forward",
+                payment_date: new Date().toISOString().split("T")[0],
+                remarks: `Carry forward from ${student.class} class`,
+                created_by: session.session?.user.id || "",
+              });
+          }
+
+          if (outstandingDue > 0) {
+            await supabase
+              .from("fee_payments")
+              .insert({
+                student_id: newStudent.id,
+                amount: outstandingDue,
+                payment_method: "outstanding_due",
+                payment_date: new Date().toISOString().split("T")[0],
+                remarks: `Outstanding due from ${student.class} class`,
+                created_by: session.session?.user.id || "",
+              });
+          }
 
           // Attempt soft-delete first, fall back to hard-delete. If both fail, rollback the new student.
           try {
