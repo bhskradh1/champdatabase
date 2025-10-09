@@ -154,8 +154,14 @@ const Reports = () => {
   const classes = Array.from(new Set(students?.map((s) => s.class) || []));
 
   const totalStudents = students?.length || 0;
-  const totalFees = students?.reduce((sum, s) => sum + Number(s.total_fee), 0) || 0;
-  const totalCollected = students?.reduce((sum, s) => sum + Number(s.fee_paid), 0) || 0;
+  const totalFees = students?.reduce((sum, s) => {
+    const currentYearFees = Number(s.current_year_fees ?? s.total_fee ?? 0);
+    const previousBalance = Number(s.previous_year_balance ?? 0);
+    return sum + currentYearFees + previousBalance;
+  }, 0) || 0;
+  const totalCollected = students?.reduce((sum, s) => {
+    return sum + Number(s.fee_paid_current_year ?? s.fee_paid ?? 0);
+  }, 0) || 0;
   const totalPending = totalFees - totalCollected;
 
   return (
